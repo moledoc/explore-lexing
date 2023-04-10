@@ -7,7 +7,7 @@
 #define MAX_STR 100 // TODO: make more robust
 
 typedef enum {
-	STRING = 0,
+	WORD = 0,
 	INT = 1,
 	FLOAT= 2,
 	TILDE = '~',
@@ -52,8 +52,8 @@ typedef struct {
 
 void t2s(Token t) {
 	switch (t.token) {
-		case STRING:
-			printf("STRING(%s)\n", t.val);
+		case WORD:
+			printf("WORD(%s)\n", t.val);
 			break;
 		case INT:
 			printf("INT(%s)\n",t.val);
@@ -97,7 +97,7 @@ size_t tokenize(Token* tokens, char filepath[]) {
 	FILE *fp = fopen(filepath, "r");
 	while ((c = fgetc(fp)) != EOF) {
 		if ((c >= 'a' && c <= 'z') || ( c >= 'A' && c <= 'Z')) {
-			token.token = STRING;
+			token.token = WORD;
 			append_char(val, c, &k);
 		} else if ( c >= '0' && c <= '9') {
 			if (token.token != FLOAT) {
