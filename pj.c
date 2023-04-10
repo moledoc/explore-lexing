@@ -2,22 +2,6 @@
 #include <string.h>
 #include "lexer.h"
 
-void from_file() {
-	char filepath[] = "./lexer.h";
-
-	FILE *fp = fopen(filepath, "r");
-
-	fseek(fp, 0L, SEEK_END);
-	int size = ftell(fp);
-	// rewind(fp);
-	fclose(fp);
-
-	Token tokens[size];
-
-	size_t i = tokenize_file(tokens, filepath);
-	printer(tokens, i);
-}
-
 typedef enum {
 	CLEAR_STATE = 0, 
 	STRING_STATE,
@@ -106,6 +90,20 @@ void format(Token* tokens, size_t i) {
 	putchar('\n');
 }
 
+
+void from_file(char filepath[]) {
+	FILE *fp = fopen(filepath, "r");
+
+	fseek(fp, 0L, SEEK_END);
+	int size = ftell(fp);
+	fclose(fp);
+
+	Token tokens[size];
+
+	size_t i = tokenize_file(tokens, filepath);
+	format(tokens, i);
+}
+
 void from_stdin() {
 	Token tokens[1024*10];
 	size_t i = tokenize_stdin(tokens);
@@ -114,5 +112,14 @@ void from_stdin() {
 }
 
 int main(int argc, char *argv[]) {
-	from_stdin();
+	const char * delim = "=";
+	char* filepath;
+	for( int i = 1; i < argc; ++i ) {
+		char* elems = strtok( argv[i], delim);
+		elems = strtok(NULL, delim);
+		if (strcmp(elems,"--file") ){
+			filepath = elems;
+		}
+	}
+	(sizeof(filepath) > 0) ? from_file(filepath) : from_stdin();
 }
