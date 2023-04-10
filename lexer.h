@@ -24,6 +24,7 @@ void ungetch(int c) {
 
 typedef enum {
 	WORD = 0,
+	// STRING = 1,
 	INT = 1,
 	FLOAT= 2,
 	TILDE = '~',
@@ -59,6 +60,8 @@ typedef enum {
 	SPACE = ' ',
 	TAB = '\t',
 	NEWLINE = '\n',
+	DOT = '.',
+	COMMA = ',',
 } TOKEN;
 
 typedef struct {
@@ -121,7 +124,7 @@ size_t tokenize_stdin(Token* tokens) {
 			token.token = WORD;
 			append_char(val, c, &k);
 		} else if ( c >= '0' && c <= '9') {
-			if (token.token != FLOAT) {
+			if (token.token != FLOAT && token.token != WORD) {
 				token.token = INT;
 			}
 			append_char(val, c, &k);
