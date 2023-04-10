@@ -3,13 +3,14 @@
 # include <stdlib.h>
 # include <string.h>
 
+// test t2s; 1.24, 1,312
 #define MAX 1024*10 // TODO: make more robust
 #define MAX_STR 100 // TODO: make more robust
 
-
 typedef enum {
 	STRING = 0,
-	NUMBER = 1,
+	INT = 1,
+	FLOAT= 2,
 	TILDE = '~',
 	TICK = '`',
 	EXCLAIM = '!',
@@ -45,11 +46,6 @@ typedef enum {
 	NEWLINE = '\n',
 } TOKEN;
 
-struct MyFloat{
-	uint64_t fullpart;
-	uint64_t decimal;
-};
-
 typedef struct {
 	TOKEN token;
 	char val[MAX_STR];
@@ -60,8 +56,11 @@ void t2s(MyToken t) {
 		case STRING:
 			printf("STRING(%s)\n", t.val);
 			break;
-		case NUMBER:
-			printf("NUMBER(%s)\n",t.val);
+		case INT:
+			printf("INT(%s)\n",t.val);
+			break;
+		case FLOAT:
+			printf("FLOAT(%s)\n",t.val);
 			break;
 		case TAB:
 			printf("SYMOBL(\\t)\n");
@@ -77,46 +76,79 @@ void t2s(MyToken t) {
 	}
 }
 
-int main(int argc, char** argv) {
-	int c;
-	MyToken tokens[MAX];
+void append_char(char* val, char c, int *k) {
+	for (int i = 0; i<*k; i++) val++;
+	*val = (char)c;
+	(*k)++;
+}
+
+int peek_char(FILE *fp) {
+	int c = fgetc(fp);
+	ungetc(c, fp);
+	return c;
+}
+
+
+size_t tokenize(MyToken* tokens, char filepath[]) {
+	// MyToken tokens[MAX];
 	char val[MAX_STR];
-	int i = 0;
+	int c;
+	size_t i = 0;
 	int k = 0;
-	while ((c=getchar()) != EOF) {
-	//while ( (c = *test++) != '\0') {
-		MyToken token = {};
-		if (c >= 'a' && c <= 'z') {
+	MyToken token = {};
+	FILE *fp = fopen(filepath, "r"); // TODO: take filepath from argv
+	while ((c = fgetc(fp)) != EOF) {
+		if ((c >= 'a' && c <= 'z') || ( c >= 'A' && c <= 'Z')) {
 			token.token = STRING;
-			val[k] = (char)c;
-			k++;
-		} else if ( c >= 'A' && c <= 'Z'){
-			token.token = STRING;
-			val[k] = (char)c;
-			k++;
+			append_char(val, c, &k);
 		} else if ( c >= '0' && c <= '9') {
-			token.token = NUMBER;
-			val[k] = (char)c;
-			k++;
+			if (token.token != FLOAT) {
+				token.token = INT;
+			}
+			append_char(val, c, &k);
 		} else {
 			// NOTE: when string/number ends, store the token and prep for new symbol
-			// TODO: support floats, scientific notation, numbers in strings etc
+			// TODO: support ~~floats~~, scientific notation, ~~numbers in strings~~ etc
 			if (k > 0) {
+				// check if float
+				if ( c == '.') {
+					int nc = peek_char(fp);
+					if ( nc >= '0' && nc <= '9') {
+						token.token = FLOAT;
+						append_char(val, c, &k);
+						continue;
+					}
+				}
 				strcpy(token.val,val);
 				k=0;
 				memset(val, 0, MAX_STR);
-				tokens[i] = token;
+				*tokens = token;
+				tokens++;
 				i++;
 				MyToken token = {};
 			}
 			token.token = c;
 			strcpy(token.val, (char*)&c);
-			tokens[i] = token;
+			*tokens = token;
+			tokens++;
 			i++;
+			MyToken token = {};
 		}
 	}
-	
+	fclose(fp);
+	return i;
+}
+
+void printer(MyToken* tokens, size_t i) {
 	for (int j=0; j<i;++j) {
-		t2s(tokens[j]);
+		t2s(*tokens);
+		tokens++;
 	}
+}
+
+int main(int argc, char** argv) {
+	MyToken tokens[MAX];
+	size_t i = tokenize(tokens, "./token.c");
+	printer(tokens, i);
+	
 }
