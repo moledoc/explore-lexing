@@ -4,8 +4,8 @@
 #include <string.h>
 #include "lexer.h"
 
-int main(int argc, char** argv) {
-	char filepath[] = "./README.md";
+int main1(int argc, char** argv) {
+	char filepath[] = "./lexer.h";
 
 	FILE *fp = fopen(filepath, "r");
 
@@ -16,6 +16,12 @@ int main(int argc, char** argv) {
 
 	Token tokens[size];
 
-	size_t i = tokenize(tokens, filepath);
+	size_t i = tokenize_file(tokens, filepath);
+	printer(tokens, i);
+}
+
+int main(int argc, char** argv) {
+	Token tokens[1024*10];
+	size_t i = tokenize_stdin(tokens);
 	printer(tokens, i);
 }
