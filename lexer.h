@@ -1,7 +1,7 @@
-# include <stdio.h>
-# include <stdint.h>
-# include <stdlib.h>
-# include <string.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
 // NOTE: test values: t2s; 1.24, 1,312
 #define MAX_STR 100 // TODO: make more robust
@@ -142,20 +142,4 @@ void printer(Token* tokens, size_t i) {
 		t2s(*tokens);
 		tokens++;
 	}
-}
-
-int main(int argc, char** argv) {
-	char filepath[] = "./token.c";
-
-	FILE *fp = fopen(filepath, "r");
-
-	fseek(fp, 0L, SEEK_END);
-	int size = ftell(fp);
-	// rewind(fp);
-	fclose(fp);
-
-	Token tokens[size];
-
-	size_t i = tokenize(tokens, filepath);
-	printer(tokens, i);
 }
