@@ -25,14 +25,13 @@ typedef enum {
 	LIST_STATE,
 } STATE;
 
-
 void format(Token* tokens, size_t i) {
 	int depth = 0;
 	STATE state = 0;
 	for (int j=0; j<i;++j) {
 		switch (tokens->token) {
 			case CURLYL:
-				if (state == LIST_STATE) {
+				if (state != COLON_STATE) {
 					for (int i=0;i<depth;i++) printf("\t");
 				}
 				if (state != STRING_STATE) state = CLEAR_STATE;
@@ -115,10 +114,5 @@ void from_stdin() {
 }
 
 int main(int argc, char *argv[]) {
-// 	for (int i=0;i<argc;i++) {
-// 		size_t_i = strlen(argv[i]);
-// 		if size_t
-// 		printf("%s\n", argv[i]);
-// 	}
 	from_stdin();
 }
