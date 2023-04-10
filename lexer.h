@@ -24,9 +24,9 @@ void ungetch(int c) {
 
 typedef enum {
 	WORD = 0,
-	// STRING = 1,
-	INT = 1,
-	FLOAT= 2,
+	STRING = 1,
+	INT = 2,
+	FLOAT= 3,
 	TILDE = '~',
 	TICK = '`',
 	EXCLAIM = '!',
@@ -119,6 +119,7 @@ size_t tokenize_stdin(Token* tokens) {
 	size_t i = 0;
 	int k = 0;
 	Token token = {};
+	int prev;
 	while ((c = getch()) != EOF) {
 		if ((c >= 'a' && c <= 'z') || ( c >= 'A' && c <= 'Z')) {
 			token.token = WORD;
@@ -156,6 +157,7 @@ size_t tokenize_stdin(Token* tokens) {
 			i++;
 			Token token = {};
 		}
+		prev = c;
 	}
 	return i;
 }
@@ -167,10 +169,25 @@ size_t tokenize_file(Token* tokens, char filepath[]){
 	int k = 0;
 	Token token = {};
 	FILE *fp = fopen(filepath, "r");
+	int prev;
 	while ((c = fgetc(fp)) != EOF) {
 		if ((c >= 'a' && c <= 'z') || ( c >= 'A' && c <= 'Z')) {
 			token.token = WORD;
 			append_char(val, c, &k);
+// 		} else if (c == DQUOTE && prev != QUOTE && prev != BSLASH) {
+// 			token.token = STRING;
+// 			do {
+// 				append_char(val,c,&k);
+// 				prev = c;
+// 			} while ((c = fgetc(fp)) != DQUOTE && prev != BSLASH  && c != EOF );
+// 			strcpy(token.val, val);
+// 			k=0;
+// 			memset(val, 0, MAX_STR);
+// 			*tokens = token;
+// 			tokens++;
+// 			i++;
+// 			Token token = {};
+// 			continue;
 		} else if ( c >= '0' && c <= '9') {
 			if (token.token != FLOAT) {
 				token.token = INT;
@@ -181,7 +198,7 @@ size_t tokenize_file(Token* tokens, char filepath[]){
 			// TODO: support ~~floats~~, scientific notation, ~~numbers in strings~~ etc
 			if (k > 0) {
 				// check if float
-				if ( c == '.') {
+				if ( c == DOT) {
 					int nc = peek_file_char(fp);
 					if ( nc >= '0' && nc <= '9') {
 						token.token = FLOAT;
@@ -204,6 +221,7 @@ size_t tokenize_file(Token* tokens, char filepath[]){
 			i++;
 			Token token = {};
 		}
+		prev = c;
 	}
 	fclose(fp);
 	return i;
