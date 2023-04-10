@@ -3,8 +3,7 @@
 # include <stdlib.h>
 # include <string.h>
 
-// test t2s; 1.24, 1,312
-#define MAX 1024*10 // TODO: make more robust
+// NOTE: test values: t2s; 1.24, 1,312
 #define MAX_STR 100 // TODO: make more robust
 
 typedef enum {
@@ -49,9 +48,9 @@ typedef enum {
 typedef struct {
 	TOKEN token;
 	char val[MAX_STR];
-} MyToken;
+} Token;
 
-void t2s(MyToken t) {
+void t2s(Token t) {
 	switch (t.token) {
 		case STRING:
 			printf("STRING(%s)\n", t.val);
@@ -89,14 +88,13 @@ int peek_char(FILE *fp) {
 }
 
 
-size_t tokenize(MyToken* tokens, char filepath[]) {
-	// MyToken tokens[MAX];
+size_t tokenize(Token* tokens, char filepath[]) {
 	char val[MAX_STR];
 	int c;
 	size_t i = 0;
 	int k = 0;
-	MyToken token = {};
-	FILE *fp = fopen(filepath, "r"); // TODO: take filepath from argv
+	Token token = {};
+	FILE *fp = fopen(filepath, "r");
 	while ((c = fgetc(fp)) != EOF) {
 		if ((c >= 'a' && c <= 'z') || ( c >= 'A' && c <= 'Z')) {
 			token.token = STRING;
@@ -125,21 +123,21 @@ size_t tokenize(MyToken* tokens, char filepath[]) {
 				*tokens = token;
 				tokens++;
 				i++;
-				MyToken token = {};
+				Token token = {};
 			}
 			token.token = c;
 			strcpy(token.val, (char*)&c);
 			*tokens = token;
 			tokens++;
 			i++;
-			MyToken token = {};
+			Token token = {};
 		}
 	}
 	fclose(fp);
 	return i;
 }
 
-void printer(MyToken* tokens, size_t i) {
+void printer(Token* tokens, size_t i) {
 	for (int j=0; j<i;++j) {
 		t2s(*tokens);
 		tokens++;
@@ -147,8 +145,17 @@ void printer(MyToken* tokens, size_t i) {
 }
 
 int main(int argc, char** argv) {
-	MyToken tokens[MAX];
-	size_t i = tokenize(tokens, "./token.c");
+	char filepath[] = "./token.c";
+
+	FILE *fp = fopen(filepath, "r");
+
+	fseek(fp, 0L, SEEK_END);
+	int size = ftell(fp);
+	// rewind(fp);
+	fclose(fp);
+
+	Token tokens[size];
+
+	size_t i = tokenize(tokens, filepath);
 	printer(tokens, i);
-	
 }
