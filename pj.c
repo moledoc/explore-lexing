@@ -7,23 +7,37 @@ typedef enum {
 	STRING_STATE,
 	COLON_STATE,
 	LIST_STATE,
+	BSLASH_STATE,
 } STATE;
 
 void format(Token* tokens, size_t i) {
 	int depth = 0;
 	STATE state = 0;
+	STATE prev = 0;
 	for (int j=0; j<i;++j) {
 		switch (tokens->token) {
 			case CURLYL:
+				if (state == STRING_STATE) {
+					printf("%c", tokens->token);
+					break;
+				}
 				if (state != COLON_STATE) {
 					for (int i=0;i<depth;i++) printf("\t");
 				}
-				if (state != STRING_STATE) state = CLEAR_STATE;
-				printf("%c\n",tokens->token);
+				printf("%c",tokens->token);
+				if (state != STRING_STATE) {
+					putchar('\n');
+					state = CLEAR_STATE;
+				}
 				depth++;
 				break;
 			case CURLYR:
+				if (state == STRING_STATE) {
+					printf("%c",tokens->token);
+					break;
+				}
 				if (state != STRING_STATE) state = CLEAR_STATE;
+
 				depth--;
 				putchar('\n');
 				for (int i=0;i<depth;i++) printf("\t");
@@ -69,23 +83,30 @@ void format(Token* tokens, size_t i) {
 				printf("%s", tokens->val);
 				break;
 			case DQUOTE:
-				if (state == CLEAR_STATE) {
+				if (state == CLEAR_STATE || state == LIST_STATE) {
 					for (int i=0;i<depth;i++) printf("\t");
 					state = STRING_STATE;
 				} else if (state == STRING_STATE) {
 					state = CLEAR_STATE;
 				} else if (state == COLON_STATE) {
 					state = STRING_STATE;
+				} else if (state == BSLASH_STATE) {
+					state = prev;
 				}
 				printf("%c", tokens->token);
 				break;
 			case WORD:
 				printf("%s", tokens->val);
 				break;
+			case BSLASH:
+				printf("%c", tokens->token);
+				state = BSLASH_STATE;
+				break;
 			default:
 				if (state == STRING_STATE) printf("%c", tokens->token);
 		}
 		tokens++;
+		prev = state;
 	}
 	putchar('\n');
 }
@@ -93,6 +114,10 @@ void format(Token* tokens, size_t i) {
 
 void from_file(char filepath[]) {
 	FILE *fp = fopen(filepath, "r");
+	if (fp == NULL) {
+		printf("SKIP '%s': no such file found\n", filepath);
+		return;
+	}
 
 	fseek(fp, 0L, SEEK_END);
 	int size = ftell(fp);
@@ -112,14 +137,9 @@ void from_stdin() {
 }
 
 int main(int argc, char *argv[]) {
-	const char * delim = "=";
-	char* filepath;
-	for( int i = 1; i < argc; ++i ) {
-		char* elems = strtok( argv[i], delim);
-		elems = strtok(NULL, delim);
-		if (strcmp(elems,"--file") ){
-			filepath = elems;
-		}
+	if (argc > 1) {
+		for( int i = 1; i < argc; ++i ) from_file(argv[i]);
+	} else {
+		from_stdin();
 	}
-	(sizeof(filepath) > 0) ? from_file(filepath) : from_stdin();
 }

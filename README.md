@@ -16,7 +16,7 @@ Run json formatter
 
 ```{.sh}
 cc -o pj pj.c
-printf '{"test1": [1,2,3,4.4], "test2": {"lala": 1}, "test3": "https://localhost:8080", "test4": 5, 	"test5": 5.5 , "test6":     [{"lala": 1},{"lala2": 2}}' | ./pj
+printf '{"test1": [1,2,3,4.4], "test2": {"lala": 1, "po": "\" }{][{hj}{\"hei\": 1}[1,,3,4,5]"    }, "test3": "https://localhost:8080", "test4": 5, 	"test5": 5.5 , "test6":     [{"lala": 1},{"lala2": 2}}' | ./pj
 cat poke.json | ./pj
 ./pj --file=poke.json
 ```
