@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 #define MAX_TOKENS 1024*10
-#define MAX_STR 100
+#define MAX_STR 256
 
 typedef enum {
 	WORD = -1,
@@ -123,7 +123,6 @@ size_t tokenize(Token tokens[], FILE* stream) {
 			cpy(new.v, buf, (size_t)i);
 			new.t = CHAR;
 		} else if ( c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' ) {
-			char buf[MAX_STR];
 			do {
 				buf[i] = c;
 				i++;
@@ -140,7 +139,7 @@ size_t tokenize(Token tokens[], FILE* stream) {
 		}
 		tokens[size]=new;
 		size++;
-		//to_string(new);
+		to_string(new);
 	}
 	return size;
 }
