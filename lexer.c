@@ -12,6 +12,7 @@ typedef enum {
 	INT = -4,
 	FLOAT= -5,
 	NUMBER = -6,
+	URL= -7,
 	//
 	TILDE = '~',
 	TICK = '`',
@@ -75,6 +76,9 @@ void to_string(Token token){
 		case NUMBER:
 			printf("NUMBER(%s)\n", token.v);
 			break;
+		case URL:
+			printf("URL(%s)\n", token.v);
+			break;
 		case TAB:
 			if (PRINT_WHITESPACE) printf("SYMBOL(\\t)\n");
 			break;
@@ -99,6 +103,27 @@ void cpy(char* dest, char* src, size_t n) {
 		dest++;
 	}
 	*dest = '\0'; 
+}
+
+#define URL_HTTP "http"
+int is_url(char val[]) {
+	int i = 0;
+	while (val[i] != '\0' && i < 4) {
+		if (URL_HTTP[i] != val[i]) return 0;
+		++i;
+	}
+	return 1;
+}
+
+int tokenize_url(char buf[], FILE* stream) {
+	int c;
+	int i = 4; // since we checked, if url, then we know that first 4 chars are 'http' and can continue from there.
+	while ((c=fgetc(stream)) != SPACE && c != NEWLINE && c != TAB && c != EOF) {
+		buf[i] = c;
+		++i;
+	}
+	ungetc(c, stream);
+	return i;
 }
 
 size_t tokenize(Token tokens[], FILE* stream) {
@@ -127,6 +152,7 @@ size_t tokenize(Token tokens[], FILE* stream) {
 			cpy(new.v, buf, (size_t)i);
 			new.t = tkn;
 		} else if ( c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' ) {
+			new.t = WORD;
 			do {
 				if ( c == DOT || c == COMMA || c == COLON || c == SCOLON) {
 					// check if char after dot is part of word or not.
@@ -141,14 +167,17 @@ size_t tokenize(Token tokens[], FILE* stream) {
 					}
 				}
 				buf[i] = c;
-				i++;
+				++i;
+				if (i == 4 && is_url(buf)) {
+					i = tokenize_url(buf, stream);
+					new.t = URL;
+				}
 				if ( i >= MAX_STR) break; // TODO: improve
 			} while ( (c=fgetc(stream))  >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' ||
 				c >= '0' && c <= '9' || 
 				c == DOT || c == UNDERSCORE || c == DASH );
 			ungetc(c, stream);
 			cpy(new.v, buf, (size_t)i);
-			new.t = WORD;
 		} else if ( c >= '0' && c <= '9' ) {
 			int dot_count = 0;
 			do {
@@ -166,7 +195,7 @@ size_t tokenize(Token tokens[], FILE* stream) {
 				if (dot_count == 1) new.t = FLOAT;
 				if (dot_count == 2) new.t = NUMBER;
 				buf[i] = c;
-				i++;
+				++i;
 			} while ( (c=fgetc(stream))  >= '0' && c <= '9'  || c == DOT);
 			ungetc(c, stream);
 			cpy(new.v, buf, (size_t)i);

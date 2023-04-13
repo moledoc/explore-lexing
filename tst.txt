@@ -25,6 +25,13 @@ word2_word1-word.1 shouldBeOneToken
 <-word shouldBeMultipleTokens
 word->word eachWordShouldBeSeparateToken TODOthisIsAnEdgeCase
 
+
+"shouldBeOneToken"
+'shouldBeOneToken'
+'s' shouldBeOneToken
+'\'' shouldBeOneToken
+"\"" shouldBeOneToken
+
 'this is a \'char\' sentence' shouldBeOneToken
 "this is a \"string\" sentence" shouldBeOneToken
 "this is a 'mix' string sentence" shouldBeOneToken
@@ -35,3 +42,9 @@ word->word eachWordShouldBeSeparateToken TODOthisIsAnEdgeCase
 
 'there is a TAB literal in the middle \t and at the end \t' shouldBeOneToken
 "there is a TAB literal in the middle \t and at the end \t" shouldBeOneToken
+
+https://google.com
+http://www.youtube.com
+this sentence contains url: http://localhost:8080
+https://github.com/moledoc/tokenc.git contains the source code.
+
