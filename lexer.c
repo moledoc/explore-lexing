@@ -74,13 +74,13 @@ void to_string(Token token){
 			printf("NUMBER(%s)\n", token.v);
 			break;
 		case TAB:
-			printf("SYMOBL(\\t)\n");
+			// printf("SYMBOL(\\t)\n");
 			break;
 		case NEWLINE:
-			printf("SYMBOL(\\n)\n");
+			// printf("SYMBOL(\\n)\n");
 			break;
 		case SPACE:
-			printf("SYMBOL(' ')\n");
+			// printf("SYMBOL(' ')\n");
 			break;
 		default:
 			printf("SYMBOL(%s)\n", token.v);
@@ -114,16 +114,19 @@ size_t tokenize(Token tokens[], FILE* stream) {
 			do {
 				buf[i] = c;
 				i++;
+				if ( i>=MAX_STR) break; // TODO: improve
 			} while ((c=fgetc(stream)) != DQUOTE && c != EOF );
 			if (c != EOF) buf[i] = c;
 			cpy(new.v, buf, (size_t)i);
 			new.t = STRING;
 		} else if ( c == QUOTE) {
+			int prev = 0;
 			do {
 				buf[i] = c;
 				i++;
-				if (i >= MAX_STR) break;
-			} while ((c=fgetc(stream)) != QUOTE && c != EOF );
+				if ( prev == BSLASH && c != BSLASH) prev = c;
+				if (i >= MAX_STR) break; // TODO: improve
+			} while ((c=fgetc(stream)) != QUOTE && prev != BSLASH && c != EOF );
 			if (c != EOF) buf[i] = c;
 			cpy(new.v, buf, (size_t)i);
 			new.t = CHAR;
@@ -136,14 +139,14 @@ size_t tokenize(Token tokens[], FILE* stream) {
 					if ( c0 >= 'a' && c0 <= 'z' || c0 >= 'A' && c0 <= 'Z' ||
 						c0 >= '0' && c0 <= '9' || 
 						c0 == DOT || c0 == UNDERSCORE || c0 == DASH ) {
-						break;
-					} else {
 						ungetc(c0, stream);
+					} else {
+						break;
 					}
 				}
 				buf[i] = c;
 				i++;
-				if ( i >= MAX_STR) break;
+				if ( i >= MAX_STR) break; // TODO: improve
 			} while ( (c=fgetc(stream))  >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' ||
 				c >= '0' && c <= '9' || 
 				c == DOT || c == UNDERSCORE || c == DASH );
