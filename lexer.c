@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#define MAX_TOKENS 1000
+#define MAX_TOKENS 1024*10
 #define MAX_STR 100
 
 typedef enum {
@@ -105,56 +105,50 @@ size_t tokenize(Token tokens[], FILE* stream) {
 	while ( (c = fgetc(stream)) != EOF) {
 		char buf[MAX_STR];
 		Token new={};
+		int i = 0;
 		if ( c == DQUOTE) {
-			int i = 0;
-			while ((c=fgetc(stream)) != DQUOTE && c != EOF ) {
+			do {
 				buf[i] = c;
 				i++;
-			}
-			char val[i+1];
+			} while ((c=fgetc(stream)) != DQUOTE && c != EOF );
+			if (c != EOF) buf[i] = c;
 			cpy(new.v, buf, (size_t)i);
 			new.t = STRING;
 		} else if ( c == QUOTE) {
-			int i = 0;
-			char buf[MAX_STR];
-			while ((c=fgetc(stream)) != QUOTE && c != EOF ) {
+			do {
 				buf[i] = c;
 				i++;
-			}
-			char val[i+1];
+			} while ((c=fgetc(stream)) != QUOTE && c != EOF );
+			if (c != EOF) buf[i] = c;
 			cpy(new.v, buf, (size_t)i);
 			new.t = CHAR;
 		} else if ( c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' ) {
-			int i = 0;
 			char buf[MAX_STR];
-			buf[i] = 0;
 			do {
 				buf[i] = c;
 				i++;
 			} while ( ((c=fgetc(stream))  >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' ) && c != EOF);
 			ungetc(c, stream);
-			char val[i+1];
 			cpy(new.v, buf, (size_t)i);
 			new.t = WORD;
 		} else {
 			char val[1];
 			new.t = c;
-			val[0] = c;
-			cpy(new.v, val, 1);
+			buf[0] = c;
+			buf[1] = '\0';
+			cpy(new.v, buf, 2);
 		}
 		tokens[size]=new;
-		//tokens++;
 		size++;
 		//to_string(new);
 	}
-	//for (int j=0;j<size;++j) --tokens;
 	return size;
 }
 
 int main(int argc, char* argv) {
-	char* word = "tere t\"ul\\ema\"st";
 	Token tokens[MAX_TOKENS];
 
-	size_t  size = tokenize(tokens, stdin);
+	size_t size = tokenize(tokens, stdin);
+	printf("HAAR\n");
 	printer(tokens, size);
 }
