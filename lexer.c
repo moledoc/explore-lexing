@@ -122,15 +122,31 @@ size_t tokenize(Token tokens[], FILE* stream) {
 			do {
 				buf[i] = c;
 				i++;
+				if (i >= MAX_STR) break;
 			} while ((c=fgetc(stream)) != QUOTE && c != EOF );
 			if (c != EOF) buf[i] = c;
 			cpy(new.v, buf, (size_t)i);
 			new.t = CHAR;
 		} else if ( c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' ) {
 			do {
+				if ( c == DOT || c == COMMA || c == COLON || c == SCOLON) {
+					// check if char after dot is part of word or not.
+					// if not, break out of the loop, if yes then put the peeked char back to sream.
+					int c0 = fgetc(stream);
+					if ( c0 >= 'a' && c0 <= 'z' || c0 >= 'A' && c0 <= 'Z' ||
+						c0 >= '0' && c0 <= '9' || 
+						c0 == DOT || c0 == UNDERSCORE || c0 == DASH ) {
+						break;
+					} else {
+						ungetc(c0, stream);
+					}
+				}
 				buf[i] = c;
 				i++;
-			} while ( ((c=fgetc(stream))  >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' ) && c != EOF);
+				if ( i >= MAX_STR) break;
+			} while ( (c=fgetc(stream))  >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' ||
+				c >= '0' && c <= '9' || 
+				c == DOT || c == UNDERSCORE || c == DASH );
 			ungetc(c, stream);
 			cpy(new.v, buf, (size_t)i);
 			new.t = WORD;
@@ -152,7 +168,7 @@ size_t tokenize(Token tokens[], FILE* stream) {
 				if (dot_count == 2) new.t = NUMBER;
 				buf[i] = c;
 				i++;
-			} while ( ((c=fgetc(stream))  >= '0' && c <= '9'  || c == DOT) && c != EOF);
+			} while ( (c=fgetc(stream))  >= '0' && c <= '9'  || c == DOT);
 			ungetc(c, stream);
 			cpy(new.v, buf, (size_t)i);
 			if (!dot_count) new.t = INT;
