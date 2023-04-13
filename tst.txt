@@ -8,20 +8,30 @@ word2 shouldBeOneToken
 word2word shouldBeOneToken
 word22 shouldBeOneToken
 word22dorw shouldBeOneToken
+
 word. lastDotShouldBeSeparateToken
 word.word shouldBeOneToken
 word.word.word. lastDotShouldBeSeparateToken
+
 word- shouldBeOneToken
 word-word shouldBeOneToken
 word-word- shouldBeOneToken
 word_ shouldBeOneToken
 word_word shouldBeOneToken
 word_word_ shouldBeOneToken
+
 word2_word1-word.1 shouldBeOneToken
+
 <-word shouldBeMultipleTokens
 word->word eachWordShouldBeSeparateToken TODOthisIsAnEdgeCase
 
 'this is a \'char\' sentence' shouldBeOneToken
 "this is a \"string\" sentence" shouldBeOneToken
 "this is a 'mix' string sentence" shouldBeOneToken
-'this is a "mix" char sentence" shouldBeOneToken
+'this is a "mix" char sentence' shouldBeOneToken
+
+'there is a BSLASH literal in the middle \\ and at the end \\' shouldBeOneToken
+"there is a BSLASH literal in the middle \\ and at the end \\" shouldBeOneToken
+
+'there is a TAB literal in the middle \t and at the end \t' shouldBeOneToken
+"there is a TAB literal in the middle \t and at the end \t" shouldBeOneToken

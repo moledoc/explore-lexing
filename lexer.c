@@ -111,23 +111,33 @@ size_t tokenize(Token tokens[], FILE* stream) {
 		Token new={};
 		int i = 0;
 		if ( c == DQUOTE) {
+			int prev = 0;
 			do {
 				buf[i] = c;
-				i++;
-				if ( i>=MAX_STR) break; // TODO: improve
-			} while ((c=fgetc(stream)) != DQUOTE && c != EOF );
-			if (c != EOF) buf[i] = c;
+				++i;
+				// if there are 2 consecutive BSLASHs, then it's BSLASH literal and we set prev to 0; else set prev normally
+				prev = (c == BSLASH && prev == BSLASH) ? 0 : c;
+				if (i >= MAX_STR) break; // TODO: improve
+			} while (((c=fgetc(stream)) != DQUOTE || prev == BSLASH) && c != EOF );
+			if (c != EOF) { 
+				buf[i] = c;
+				++i;
+			}
 			cpy(new.v, buf, (size_t)i);
 			new.t = STRING;
 		} else if ( c == QUOTE) {
 			int prev = 0;
 			do {
 				buf[i] = c;
-				i++;
-				if ( prev == BSLASH && c != BSLASH) prev = c;
+				++i;
+				// if there are 2 consecutive BSLASHs, then it's BSLASH literal and we set prev to 0; else set prev normally
+				prev = (c == BSLASH && prev == BSLASH) ? 0 : c;
 				if (i >= MAX_STR) break; // TODO: improve
-			} while ((c=fgetc(stream)) != QUOTE && prev != BSLASH && c != EOF );
-			if (c != EOF) buf[i] = c;
+			} while (((c=fgetc(stream)) != QUOTE || prev == BSLASH) && c != EOF );
+			if (c != EOF) { 
+				buf[i] = c;
+				++i;
+			}
 			cpy(new.v, buf, (size_t)i);
 			new.t = CHAR;
 		} else if ( c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' ) {
