@@ -130,6 +130,14 @@ size_t tokenize(Token tokens[], FILE* stream) {
 			ungetc(c, stream);
 			cpy(new.v, buf, (size_t)i);
 			new.t = WORD;
+		} else if ( c >= '0' && c <= '9' ) {
+			do {
+				buf[i] = c;
+				i++;
+			} while ( ((c=fgetc(stream))  >= '0' && c <= '9' ) && c != EOF);
+			ungetc(c, stream);
+			cpy(new.v, buf, (size_t)i);
+			new.t = WORD;
 		} else {
 			char val[1];
 			new.t = c;
@@ -139,7 +147,7 @@ size_t tokenize(Token tokens[], FILE* stream) {
 		}
 		tokens[size]=new;
 		size++;
-		to_string(new);
+		//to_string(new);
 	}
 	return size;
 }
@@ -148,6 +156,5 @@ int main(int argc, char* argv) {
 	Token tokens[MAX_TOKENS];
 
 	size_t size = tokenize(tokens, stdin);
-	printf("HAAR\n");
 	printer(tokens, size);
 }
