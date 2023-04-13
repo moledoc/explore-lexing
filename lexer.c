@@ -88,11 +88,7 @@ void to_string(Token token){
 }
 
 void printer(Token tokens[], size_t n){
-	for (int i=0;i<n;i++) {
-		// --tokens;
-		to_string(tokens[i]);
-		//tokens++;
-	}
+	for (int i=0;i<n;i++) to_string(tokens[i]);
 }
 
 void cpy(char* dest, char* src, size_t n) {
@@ -110,7 +106,10 @@ size_t tokenize(Token tokens[], FILE* stream) {
 		char buf[MAX_STR];
 		Token new={};
 		int i = 0;
-		if ( c == DQUOTE) {
+		if ( c == DQUOTE || c == QUOTE) {
+			int state = c; // strore whether we are in DQOUTE or QUOTE
+			int tkn = CHAR; // store the token type
+			if (state == DQUOTE); tkn = STRING;
 			int prev = 0;
 			do {
 				buf[i] = c;
@@ -118,28 +117,13 @@ size_t tokenize(Token tokens[], FILE* stream) {
 				// if there are 2 consecutive BSLASHs, then it's BSLASH literal and we set prev to 0; else set prev normally
 				prev = (c == BSLASH && prev == BSLASH) ? 0 : c;
 				if (i >= MAX_STR) break; // TODO: improve
-			} while (((c=fgetc(stream)) != DQUOTE || prev == BSLASH) && c != EOF );
+			} while (((c=fgetc(stream)) != state || prev == BSLASH) && c != EOF );
 			if (c != EOF) { 
 				buf[i] = c;
 				++i;
 			}
 			cpy(new.v, buf, (size_t)i);
-			new.t = STRING;
-		} else if ( c == QUOTE) {
-			int prev = 0;
-			do {
-				buf[i] = c;
-				++i;
-				// if there are 2 consecutive BSLASHs, then it's BSLASH literal and we set prev to 0; else set prev normally
-				prev = (c == BSLASH && prev == BSLASH) ? 0 : c;
-				if (i >= MAX_STR) break; // TODO: improve
-			} while (((c=fgetc(stream)) != QUOTE || prev == BSLASH) && c != EOF );
-			if (c != EOF) { 
-				buf[i] = c;
-				++i;
-			}
-			cpy(new.v, buf, (size_t)i);
-			new.t = CHAR;
+			new.t = tkn;
 		} else if ( c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' ) {
 			do {
 				if ( c == DOT || c == COMMA || c == COLON || c == SCOLON) {
