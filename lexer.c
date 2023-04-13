@@ -9,6 +9,7 @@ typedef enum {
 	STRING = -3,
 	INT = -4,
 	FLOAT= -5,
+	NUMBER = -6,
 	//
 	TILDE = '~',
 	TICK = '`',
@@ -68,6 +69,9 @@ void to_string(Token token){
 			break;
 		case FLOAT:
 			printf("FLOAT(%s)\n",token.v);
+			break;
+		case NUMBER:
+			printf("NUMBER(%s)\n", token.v);
 			break;
 		case TAB:
 			printf("SYMOBL(\\t)\n");
@@ -131,13 +135,27 @@ size_t tokenize(Token tokens[], FILE* stream) {
 			cpy(new.v, buf, (size_t)i);
 			new.t = WORD;
 		} else if ( c >= '0' && c <= '9' ) {
+			int dot_count = 0;
 			do {
+				if ( c == DOT) {
+					// check if char after dot is number or not.
+					// if not, break out of the loop, if yes then put the peeked char back to sream.
+					int c0 = fgetc(stream);
+					if (c0 < '0' || c0 > '9') {
+						break;
+					} else {
+						ungetc(c0, stream);
+					}
+					++dot_count;
+				}
+				if (dot_count == 1) new.t = FLOAT;
+				if (dot_count == 2) new.t = NUMBER;
 				buf[i] = c;
 				i++;
-			} while ( ((c=fgetc(stream))  >= '0' && c <= '9' ) && c != EOF);
+			} while ( ((c=fgetc(stream))  >= '0' && c <= '9'  || c == DOT) && c != EOF);
 			ungetc(c, stream);
 			cpy(new.v, buf, (size_t)i);
-			new.t = WORD;
+			if (!dot_count) new.t = INT;
 		} else {
 			char val[1];
 			new.t = c;
