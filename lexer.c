@@ -1,7 +1,9 @@
 #include <stdio.h>
 
-#define MAX_TOKENS 1024*10
-#define MAX_STR 256
+#define MAX_TOKENS 1024*10 // TODO: make more robust and no segfault when Tokens list gets full
+#define MAX_STR 256 // TODO: make more robust and no stack smashing when char list gets full
+
+#define PRINT_WHITESPACE 0
 
 typedef enum {
 	WORD = -1,
@@ -74,13 +76,13 @@ void to_string(Token token){
 			printf("NUMBER(%s)\n", token.v);
 			break;
 		case TAB:
-			// printf("SYMBOL(\\t)\n");
+			if (PRINT_WHITESPACE) printf("SYMBOL(\\t)\n");
 			break;
 		case NEWLINE:
-			// printf("SYMBOL(\\n)\n");
+			if (PRINT_WHITESPACE) printf("SYMBOL(\\n)\n");
 			break;
 		case SPACE:
-			// printf("SYMBOL(' ')\n");
+			if (PRINT_WHITESPACE) printf("SYMBOL(' ')\n");
 			break;
 		default:
 			printf("SYMBOL(%s)\n", token.v);
