@@ -52,20 +52,22 @@ typedef struct {
 	char v[MAX_STR];
 } Token;
 
-void to_string(Token* token){
-	switch (token->t) {
+void to_string(Token token){
+	switch (token.t) {
 		case WORD:
-			printf("WORD(%s)\n", token->v);
+			printf("WORD(%s)\n", token.v);
 			break;
 		case CHAR:
-			printf("CHAR(%s)\n", token->v);
+			printf("CHAR(%s)\n", token.v);
+			break;
 		case STRING:
-			printf("STRING(%s)\n", token->v);
+			printf("STRING(%s)\n", token.v);
+			break;
 		case INT:
-			printf("INT(%s)\n",token->v);
+			printf("INT(%s)\n",token.v);
 			break;
 		case FLOAT:
-			printf("FLOAT(%s)\n",token->v);
+			printf("FLOAT(%s)\n",token.v);
 			break;
 		case TAB:
 			printf("SYMOBL(\\t)\n");
@@ -77,15 +79,15 @@ void to_string(Token* token){
 			printf("SYMBOL(' ')\n");
 			break;
 		default:
-			printf("SYMBOL(%s)\n", token->v);
+			printf("SYMBOL(%s)\n", token.v);
 	}
 }
 
-void printer(Token* tokens, size_t n){
+void printer(Token tokens[], size_t n){
 	for (int i=0;i<n;i++) {
 		// --tokens;
-		to_string(tokens);
-		tokens++;
+		to_string(tokens[i]);
+		//tokens++;
 	}
 }
 
@@ -97,7 +99,7 @@ void cpy(char* dest, char* src, size_t n) {
 	*dest = '\0'; 
 }
 
-size_t tokenize(Token* tokens, FILE* stream) {
+size_t tokenize(Token tokens[], FILE* stream) {
 	size_t size = 0;
 	int c;
 	while ( (c = fgetc(stream)) != EOF) {
@@ -107,7 +109,7 @@ size_t tokenize(Token* tokens, FILE* stream) {
 			int i = 0;
 			while ((c=fgetc(stream)) != DQUOTE && c != EOF ) {
 				buf[i] = c;
-				i+=sizeof(c);
+				i++;
 			}
 			char val[i+1];
 			cpy(new.v, buf, (size_t)i);
@@ -117,7 +119,7 @@ size_t tokenize(Token* tokens, FILE* stream) {
 			char buf[MAX_STR];
 			while ((c=fgetc(stream)) != QUOTE && c != EOF ) {
 				buf[i] = c;
-				i+=sizeof(c);
+				i++;
 			}
 			char val[i+1];
 			cpy(new.v, buf, (size_t)i);
@@ -128,24 +130,24 @@ size_t tokenize(Token* tokens, FILE* stream) {
 			buf[i] = 0;
 			do {
 				buf[i] = c;
-				i+= sizeof(c);
-			} while ((c=fgetc(stream)) != EOF && ( c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' ) );
-			//ungetc(c, stream);
+				i++;
+			} while ( ((c=fgetc(stream))  >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' ) && c != EOF);
+			ungetc(c, stream);
 			char val[i+1];
 			cpy(new.v, buf, (size_t)i);
 			new.t = WORD;
 		} else {
-			char val[2];
+			char val[1];
 			new.t = c;
 			val[0] = c;
-			cpy(new.v, val, 2);
+			cpy(new.v, val, 1);
 		}
-		*tokens=new;
-		tokens++;
+		tokens[size]=new;
+		//tokens++;
 		size++;
 		//to_string(new);
 	}
-	for (int j=0;j<size;++j) --tokens;
+	//for (int j=0;j<size;++j) --tokens;
 	return size;
 }
 
