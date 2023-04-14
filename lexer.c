@@ -1,7 +1,12 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
-#define MAX_TOKENS 1024*10 // TODO: make more robust and no segfault when Tokens list gets full
+#define MAX_TOKENS 1024*1024 // TODO: make more robust and no segfault when Tokens list gets full
 #define MAX_STR 256 // TODO: make more robust and no stack smashing when char list gets full
+#define URL_HTTP "http"
 
 #define PRINT_WHITESPACE 0
 
@@ -100,12 +105,11 @@ void printer(Token tokens[], size_t n){
 void cpy(char* dest, char* src, size_t n) {
 	for( int i=0; i<n; i++) {
 		*dest= *src++;
-		dest++;
+		++dest;
 	}
 	*dest = '\0'; 
 }
 
-#define URL_HTTP "http"
 int is_url(char val[]) {
 	int i = 0;
 	while (val[i] != '\0' && i < 4) {
@@ -115,6 +119,7 @@ int is_url(char val[]) {
 	return 1;
 }
 
+// TODO: add check for '://'
 int tokenize_url(char buf[], FILE* stream) {
 	int c;
 	int i = 4; // since we checked, if url, then we know that first 4 chars are 'http' and can continue from there.
@@ -214,9 +219,56 @@ size_t tokenize(Token tokens[], FILE* stream) {
 	return size;
 }
 
-int main(int argc, char* argv) {
-	Token tokens[MAX_TOKENS];
+ int main(int argc, char** argv) {
 
+	Token tokens[MAX_TOKENS];
 	size_t size = tokenize(tokens, stdin);
 	printer(tokens, size);
+
+// 	if ( argc == 1){
+// 		struct stat stats;
+// 		fstat(fileno(stdin), &stats);
+// 	
+// 		if (S_ISFIFO(stats.st_mode)) {
+// 			Token tokens[MAX_TOKENS];
+// 			size_t size = tokenize(tokens, stdin);
+// 			printer(tokens, size);
+// 		} else {
+// 			FILE* strm = stdin;
+// 			fseek(strm, 0L, SEEK_END);
+// 			int max_token_amount = ftell(strm);
+// 			rewind(strm);
+// 			Token tokens[max_token_amount];
+// 		 	size_t size = tokenize(tokens, strm);
+// 			printer(tokens, size);
+// 		}
+// 	} else {
+// 		size_t total;
+// 		size_t sub[argc];
+// 		for (int i=0;i<argc;++i) {
+// 			FILE* strm = fopen(argv[i], "r");
+// 			if (strm == NULL) {
+// 				printf("SKIP '%s': no such file\n", argv[i]);
+// 				continue;
+// 			}
+// 			fseek(strm, 0L, SEEK_END);
+// 			int max_token_amount = ftell(strm);
+// 			fclose(strm);
+// 			total += max_token_amount;
+// 			sub[i] = max_token_amount;
+// 		}
+// 
+// 		size_t total_tokens;
+// 		Token tokens[total];
+// 		for (int i=0; i<argc;++i) {
+// 			FILE* strm = fopen(argv[i], "r");
+// 			Token tmp_tokens[sub[i]];
+// 		 	size_t tmp_size = tokenize(tmp_tokens, strm);
+// 			fclose(strm);
+// 			total_tokens += tmp_size;
+// 			cpy_tokens(tokens, tmp_tokens, tmp_size);
+// 		}
+// 		size_t size = total_tokens;
+// 		printer(tokens, size);
+//	}
 }
