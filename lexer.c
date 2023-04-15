@@ -230,11 +230,11 @@ size_t tokenize(Token tokens[], FILE* stream) {
 	if ( argc == 1){
 		struct stat stats;
 		fstat(fileno(stdin), &stats);	
-		if (S_ISFIFO(stats.st_mode)) {
+		if (S_ISFIFO(stats.st_mode)) { // NOTE: read stdin when input is piped in
 			Token tokens[MAX_TOKENS];
 			size_t size = tokenize(tokens, stdin);
 			printer(tokens, size);
-		} else if (S_ISCHR(stats.st_mode)) {
+		} else if (S_ISCHR(stats.st_mode)) { // NOTE: this block is basically REPL
 			while (1) {
 			int bufsize = MAX_STR;
 			char tst[bufsize];
@@ -252,7 +252,7 @@ size_t tokenize(Token tokens[], FILE* stream) {
 			printer(tokens, size);
 			putc('\n', stdout);
 			}
-		} else {
+		} else { // NOTE: read stdin when input is as a file (eg ./lexer < LICENCE)
 			FILE* strm = stdin;
 			fseek(strm, 0L, SEEK_END);
 			int max_token_amount = ftell(strm);
@@ -261,7 +261,7 @@ size_t tokenize(Token tokens[], FILE* stream) {
 		 	size_t size = tokenize(tokens, strm);
 			printer(tokens, size);
 		}
-	} else {
+	} else { // NOTE: input is read from files that are provided as args
 		size_t total;
 		size_t sub[argc-1];
 		int ids[argc-1];
