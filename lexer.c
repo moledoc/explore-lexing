@@ -7,6 +7,7 @@
 #define MAX_TOKENS 1024*10 // TODO: make more robust and no segfault when Tokens list gets full
 #define MAX_STR 256 // TODO: make more robust and no stack smashing when char list gets full
 #define URL_HTTP "http"
+#define EOT 0x04 // NOTE: 0x04 is hex for EOT (when read from file)
 
 #define PRINT_WHITESPACE 0
 
@@ -130,7 +131,7 @@ int is_url(char val[]) {
 int tokenize_url(char buf[], FILE* stream) {
 	int c;
 	int i = 4; // since we checked, if url, then we know that first 4 chars are 'http' and can continue from there.
-	while ((c=fgetc(stream)) != SPACE && c != NEWLINE && c != TAB && c != EOF) {
+	while ((c=fgetc(stream)) != SPACE && c != NEWLINE && c != TAB && c != EOF && c != EOT) {
 		buf[i] = c;
 		++i;
 	}
@@ -140,8 +141,8 @@ int tokenize_url(char buf[], FILE* stream) {
 
 size_t tokenize(Token tokens[], FILE* stream) {
 	size_t size = 0;
-	int c;
-	while ( (c = fgetc(stream)) != EOF) {
+	int c;	
+	while ( (c = fgetc(stream)) != EOF && c != EOT) { 
 		char buf[MAX_STR];
 		Token new={};
 		int i = 0;
@@ -156,8 +157,8 @@ size_t tokenize(Token tokens[], FILE* stream) {
 				// if there are 2 consecutive BSLASHs, then it's BSLASH literal and we set prev to 0; else set prev normally
 				prev = (c == BSLASH && prev == BSLASH) ? 0 : c;
 				if (i >= MAX_STR) break; // TODO: improve
-			} while (((c=fgetc(stream)) != state || prev == BSLASH) && c != EOF );
-			if (c != EOF) { 
+			} while (((c=fgetc(stream)) != state || prev == BSLASH) && c != EOF && c != EOT);
+			if (c != EOF || c != EOT) { 
 				buf[i] = c;
 				++i;
 			}
@@ -220,8 +221,7 @@ size_t tokenize(Token tokens[], FILE* stream) {
 			cpy(new.v, buf, 2);
 		}
 		tokens[size]=new;
-		size++;
-		//to_string(new);
+		++size;
 	}
 	return size;
 }
@@ -229,8 +229,7 @@ size_t tokenize(Token tokens[], FILE* stream) {
  int main(int argc, char** argv) {
 	if ( argc == 1){
 		struct stat stats;
-		fstat(fileno(stdin), &stats);
-	
+		fstat(fileno(stdin), &stats);	
 		if (S_ISFIFO(stats.st_mode)) {
 			Token tokens[MAX_TOKENS];
 			size_t size = tokenize(tokens, stdin);
@@ -264,8 +263,10 @@ size_t tokenize(Token tokens[], FILE* stream) {
 		}
 	} else {
 		size_t total;
-		size_t sub[argc];
-		for (int i=0;i<argc;++i) {
+		size_t sub[argc-1];
+		int ids[argc-1];
+		int idx = 0;
+		for (int i=1;i<argc;++i) {
 			FILE* strm = fopen(argv[i], "r");
 			if (strm == NULL) {
 				printf("SKIP '%s': no such file\n", argv[i]);
@@ -274,21 +275,27 @@ size_t tokenize(Token tokens[], FILE* stream) {
 			fseek(strm, 0L, SEEK_END);
 			int max_token_amount = ftell(strm);
 			fclose(strm);
-			total += max_token_amount;
-			sub[i] = max_token_amount;
+			total += max_token_amount * 2;
+			sub[idx] = max_token_amount *2;
+			ids[idx] = i;
+			++idx;
+		}
+
+		if (total == 0) {
+			printf("Nothing to tokenize\n");
+			return 0;
 		}
 
 		size_t total_tokens;
 		Token tokens[total];
-		for (int i=0; i<argc;++i) {
+		for (int ix=0; ix<idx;++ix) {
+			int i = ids[ix];
 			FILE* strm = fopen(argv[i], "r");
-			Token tmp_tokens[sub[i]];
+			Token tmp_tokens[sub[i-1]];
 		 	size_t tmp_size = tokenize(tmp_tokens, strm);
 			fclose(strm);
 			total_tokens += tmp_size;
-			cpy_tokens(tokens, tmp_tokens, tmp_size);
+			printer(tmp_tokens, tmp_size);
 		}
-		size_t size = total_tokens;
-		printer(tokens, size);
 	}
 }
