@@ -1,32 +1,22 @@
 #include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
 
-// NOTE: test values: t2s; 1.24, 1,312
-#define MAX_STR 100 // TODO: make more robust
+#define MAX_TOKENS 1024*10 // TODO: make more robust and no segfault when Tokens list gets full
+#define MAX_STR 256 // TODO: make more robust and no stack smashing when char list gets full
+#define URL_HTTP "http"
+#define URL_COLON_SLASH_SLASH "://"
+#define EOT 0x04 // NOTE: 0x04 is hex for EOT (when read from file)
 
-#define BUFFER 100
-char buf[BUFFER];
-int bufp = 0;
-
-int getch() {
-	return (bufp > 0) ? buf[--bufp] : getchar();
-}
-
-void ungetch(int c) {
-	if (bufp >= BUFFER) {
-		printf("ERROR: ungetch too many chars");
-		exit(1);
-	}
-	buf[bufp++] = c; 
-}
+#define PRINT_WHITESPACE 0
 
 typedef enum {
-	WORD = 0,
-	STRING = 1,
-	INT = 2,
-	FLOAT= 3,
+	WORD = -1,
+	CHAR = -2,
+	STRING = -3,
+	INT = -4,
+	FLOAT= -5,
+	NUMBER = -6,
+	URL= -7,
+	//
 	TILDE = '~',
 	TICK = '`',
 	EXCLAIM = '!',
@@ -65,173 +55,187 @@ typedef enum {
 } TOKEN;
 
 typedef struct {
-	TOKEN token;
-	char val[MAX_STR];
+	TOKEN t;
+	char v[MAX_STR];
 } Token;
 
-void t2s(Token t) {
-	switch (t.token) {
+void to_string(Token token){
+	switch (token.t) {
 		case WORD:
-			printf("WORD(%s)\n", t.val);
+			printf("WORD(%s)\n", token.v);
+			break;
+		case CHAR:
+			printf("CHAR(%s)\n", token.v);
+			break;
+		case STRING:
+			printf("STRING(%s)\n", token.v);
 			break;
 		case INT:
-			printf("INT(%s)\n",t.val);
+			printf("INT(%s)\n",token.v);
 			break;
 		case FLOAT:
-			printf("FLOAT(%s)\n",t.val);
+			printf("FLOAT(%s)\n",token.v);
+			break;
+		case NUMBER:
+			printf("NUMBER(%s)\n", token.v);
+			break;
+		case URL:
+			printf("URL(%s)\n", token.v);
 			break;
 		case TAB:
-			printf("SYMOBL(\\t)\n");
+			if (PRINT_WHITESPACE) printf("SYMBOL(\\t)\n");
 			break;
 		case NEWLINE:
-			printf("SYMBOL(\\n)\n");
+			if (PRINT_WHITESPACE) printf("SYMBOL(\\n)\n");
 			break;
 		case SPACE:
-			printf("SYMBOL(' ')\n");
+			if (PRINT_WHITESPACE) printf("SYMBOL(' ')\n");
 			break;
 		default:
-			printf("SYMBOL(%s)\n", t.val);
+			printf("SYMBOL(%s)\n", token.v);
 	}
 }
 
-void append_char(char* val, char c, int *k) {
-	for (int i = 0; i<*k; i++) val++;
-	*val = (char)c;
-	(*k)++;
+void printer(Token tokens[], size_t n){
+	for (int i=0;i<n;i++) to_string(tokens[i]);
 }
 
-int peek_stream_char() {
-	int c = getch();
-	ungetch(c);
-	return c;
+void cpy(char* dest, char* src, size_t n) {
+	for( int i=0; i<n; i++) {
+		*dest= *src++;
+		++dest;
+	}
+	*dest = '\0'; 
 }
 
-int peek_file_char(FILE *fp) {
-	int c = fgetc(fp);
-	ungetc(c, fp);
-	return c;
+int is_url(char val[]) {
+	int i = 0;
+	while (val[i] != '\0' && i < 4) {
+		if (URL_HTTP[i] != val[i]) return 0;
+		++i;
+	}
+	return 1;
 }
 
-
-size_t tokenize_stdin(Token* tokens) {
-	char val[MAX_STR];
+int tokenize_url(char buf[], FILE* stream, Token* token) {
 	int c;
-	size_t i = 0;
-	int k = 0;
-	Token token = {};
-	int prev;
-	while ((c = getch()) != EOF) {
-		if ((c >= 'a' && c <= 'z') || ( c >= 'A' && c <= 'Z')) {
-			token.token = WORD;
-			append_char(val, c, &k);
-		} else if ( c >= '0' && c <= '9') {
-			if (token.token != FLOAT && token.token != WORD) {
-				token.token = INT;
-			}
-			append_char(val, c, &k);
-		} else {
-			// NOTE: when string/number ends, store the token and prep for new symbol
-			// TODO: support ~~floats~~, scientific notation, ~~numbers in strings~~ etc
-			if (k > 0) {
-				// check if float
-				if ( c == '.') {
-					int nc = peek_stream_char();
-					if ( nc >= '0' && nc <= '9') {
-						token.token = FLOAT;
-						append_char(val, c, &k);
-						continue;
-					}
-				}
-				strcpy(token.val,val);
-				k=0;
-				memset(val, 0, MAX_STR);
-				*tokens = token;
-				tokens++;
-				i++;
-				Token token = {};
-			}
-			token.token = c;
-			strcpy(token.val, (char*)&c);
-			*tokens = token;
-			tokens++;
-			i++;
-			Token token = {};
-		}
-		prev = c;
+	int i = 4; // since we checked, if url, then we know that first 4 chars are 'http' and can continue from there.
+
+	// check if it's http or https. In either case, loop from the same place, ie expecting COLON to be the next char.
+	c = fgetc(stream);
+	if (c != 's') ungetc(c, stream);
+	else {
+		buf[i] = c;
+		++i;
 	}
+
+	// check '://' after http/https
+	for (int j = 0;j<3;++j) {
+		c = fgetc(stream);
+		if (URL_COLON_SLASH_SLASH[j] != c) {
+			ungetc(c, stream);
+			return i;
+		}
+		buf[i] = c;
+		++i;
+	}
+	
+	// parse rest of the url.
+	while ((c=fgetc(stream)) != SPACE && c != NEWLINE && c != TAB && 
+		c != DOT && c != COMMA && c != SCOLON && 
+		c != EOF && c != EOT) {
+		buf[i] = c;
+		++i;
+	}
+	ungetc(c, stream);
+	if (i > 5) token->t = URL;
 	return i;
 }
 
-size_t tokenize_file(Token* tokens, char filepath[]){
-	char val[MAX_STR];
-	int c;
-	size_t i = 0;
-	int k = 0;
-	Token token = {};
-	FILE *fp = fopen(filepath, "r");
-	int prev;
-	while ((c = fgetc(fp)) != EOF) {
-		if ((c >= 'a' && c <= 'z') || ( c >= 'A' && c <= 'Z')) {
-			token.token = WORD;
-			append_char(val, c, &k);
-// 		} else if (c == DQUOTE && prev != QUOTE && prev != BSLASH) {
-// 			token.token = STRING;
-// 			do {
-// 				append_char(val,c,&k);
-// 				prev = c;
-// 			} while ((c = fgetc(fp)) != DQUOTE && prev != BSLASH  && c != EOF );
-// 			strcpy(token.val, val);
-// 			k=0;
-// 			memset(val, 0, MAX_STR);
-// 			*tokens = token;
-// 			tokens++;
-// 			i++;
-// 			Token token = {};
-// 			continue;
-		} else if ( c >= '0' && c <= '9') {
-			if (token.token != FLOAT) {
-				token.token = INT;
+size_t tokenize(Token tokens[], FILE* stream) {
+	size_t size = 0;
+	int c;	
+	while ( (c = fgetc(stream)) != EOF && c != EOT) { 
+		char buf[MAX_STR];
+		Token new={};
+		int i = 0;
+		if ( c == DQUOTE || c == QUOTE) {
+			int state = c; // strore whether we are in DQOUTE or QUOTE
+			int tkn = CHAR; // store the token type
+			if (state == DQUOTE); tkn = STRING;
+			int prev = 0;
+			do {
+				buf[i] = c;
+				++i;
+				// if there are 2 consecutive BSLASHs, then it's BSLASH literal and we set prev to 0; else set prev normally
+				prev = (c == BSLASH && prev == BSLASH) ? 0 : c;
+				if (i >= MAX_STR) break; // TODO: improve
+			} while (((c=fgetc(stream)) != state || prev == BSLASH) && c != EOF && c != EOT);
+			if (c != EOF || c != EOT) { 
+				buf[i] = c;
+				++i;
 			}
-			append_char(val, c, &k);
-		} else {
-			// NOTE: when string/number ends, store the token and prep for new symbol
-			// TODO: support ~~floats~~, scientific notation, ~~numbers in strings~~ etc
-			if (k > 0) {
-				// check if float
+			cpy(new.v, buf, (size_t)i);
+			new.t = tkn;
+		} else if ( c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' ) {
+			new.t = WORD;
+			do {
+				if ( c == DOT || c == COMMA || c == COLON || c == SCOLON) {
+					// check if char after dot is part of word or not.
+					// if not, break out of the loop, if yes then put the peeked char back to sream.
+					int c0 = fgetc(stream);
+					if ( c0 >= 'a' && c0 <= 'z' || c0 >= 'A' && c0 <= 'Z' ||
+						c0 >= '0' && c0 <= '9' || 
+						c0 == DOT || c0 == UNDERSCORE || c0 == DASH ||
+						c0 == QUOTE) {
+						ungetc(c0, stream);
+					} else {
+						break;
+					}
+				}
+				buf[i] = c;
+				++i;
+				if (i == 4 && is_url(buf)) {
+					i = tokenize_url(buf, stream, &new);
+				}
+				if ( i >= MAX_STR) break; // TODO: improve
+			} while ( (c=fgetc(stream))  >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' ||
+				c >= '0' && c <= '9' || 
+				c == DOT || c == UNDERSCORE || c == DASH || 
+				c == QUOTE);
+			ungetc(c, stream);
+			cpy(new.v, buf, (size_t)i);
+		} else if ( c >= '0' && c <= '9' ) {
+			int dot_count = 0;
+			do {
 				if ( c == DOT) {
-					int nc = peek_file_char(fp);
-					if ( nc >= '0' && nc <= '9') {
-						token.token = FLOAT;
-						append_char(val, c, &k);
-						continue;
+					// check if char after dot is number or not.
+					// if not, break out of the loop, if yes then put the peeked char back to sream.
+					int c0 = fgetc(stream);
+					if (c0 < '0' || c0 > '9') {
+						break;
+					} else {
+						ungetc(c0, stream);
 					}
+					++dot_count;
 				}
-				strcpy(token.val,val);
-				k=0;
-				memset(val, 0, MAX_STR);
-				*tokens = token;
-				tokens++;
-				i++;
-				Token token = {};
-			}
-			token.token = c;
-			strcpy(token.val, (char*)&c);
-			*tokens = token;
-			tokens++;
-			i++;
-			Token token = {};
+				if (dot_count == 1) new.t = FLOAT;
+				if (dot_count == 2) new.t = NUMBER;
+				buf[i] = c;
+				++i;
+			} while ( (c=fgetc(stream))  >= '0' && c <= '9'  || c == DOT);
+			ungetc(c, stream);
+			cpy(new.v, buf, (size_t)i);
+			if (!dot_count) new.t = INT;
+		} else {
+			char val[1];
+			new.t = c;
+			buf[0] = c;
+			buf[1] = '\0';
+			cpy(new.v, buf, 2);
 		}
-		prev = c;
+		tokens[size]=new;
+		++size;
 	}
-	fclose(fp);
-	return i;
-}
-
-
-
-void printer(Token* tokens, size_t i) {
-	for (int j=0; j<i;++j) {
-		t2s(*tokens);
-		tokens++;
-	}
+	return size;
 }
