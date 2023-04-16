@@ -5,6 +5,8 @@
 #define URL_HTTP "http"
 #define URL_COLON_SLASH_SLASH "://"
 #define EOT 0x04 // NOTE: 0x04 is hex for EOT (when read from file)
+#define TRUE "true"
+#define FALSE "false"
 
 #define PRINT_WHITESPACE 0
 
@@ -16,6 +18,7 @@ typedef enum {
 	FLOAT= -5,
 	NUMBER = -6,
 	URL= -7,
+	BOOLEAN = -8,
 	//
 	TILDE = '~',
 	TICK = '`',
@@ -152,6 +155,13 @@ int tokenize_url(char buf[], FILE* stream, Token* token) {
 	return i;
 }
 
+int is_boolean(char* buf, int i) {
+	if (i == 4) for(int j=0;j<i;++j) if (TRUE[j] != buf[j]) return 0;
+	if (i == 5) for(int j=0;j<i;++j) if (FALSE[j] != buf[j]) return 0;
+	return 1;
+}
+
+
 size_t tokenize(Token tokens[], FILE* stream) {
 	size_t size = 0;
 	int c;	
@@ -195,9 +205,8 @@ size_t tokenize(Token tokens[], FILE* stream) {
 				}
 				buf[i] = c;
 				++i;
-				if (i == 4 && is_url(buf)) {
-					i = tokenize_url(buf, stream, &new);
-				}
+				if (i == 4 && is_url(buf)) i = tokenize_url(buf, stream, &new);
+				else if ((i == 4 || i==5) && is_boolean(buf, i)) new.t = BOOLEAN;
 				if ( i >= MAX_STR) break; // TODO: improve
 			} while ( (c=fgetc(stream))  >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' ||
 				c >= '0' && c <= '9' || 
