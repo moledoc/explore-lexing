@@ -1,7 +1,7 @@
-# tokenc
+# explore-lexing
 
-Currently this repo is for exploring/learning/playing around with tokenization.
-Implementation done in C.
+This repo is for exploring/learning/playing around with tokenization/lexing.
+Implementation done in C (to practice it at the same time).
 
 The current state is able to parse words, ints, floats and other symbols.
 
@@ -22,7 +22,6 @@ cat poke.json | ./pj
 ./pj poke.json
 ./pj # for REPL like json formatter
 ```
-
 
 ## Author
 
