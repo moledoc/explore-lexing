@@ -7,6 +7,7 @@
 #define MAX_TOKENS 1024*10 // TODO: make more robust and no segfault when Tokens list gets full
 #define MAX_STR 256 // TODO: make more robust and no stack smashing when char list gets full
 #define URL_HTTP "http"
+#define URL_COLON_SLASH_SLASH "://"
 #define EOT 0x04 // NOTE: 0x04 is hex for EOT (when read from file)
 
 #define PRINT_WHITESPACE 0
@@ -120,15 +121,38 @@ int is_url(char val[]) {
 	return 1;
 }
 
-// TODO: add check for '://'
-int tokenize_url(char buf[], FILE* stream) {
+int tokenize_url(char buf[], FILE* stream, Token* token) {
 	int c;
 	int i = 4; // since we checked, if url, then we know that first 4 chars are 'http' and can continue from there.
-	while ((c=fgetc(stream)) != SPACE && c != NEWLINE && c != TAB && c != EOF && c != EOT) {
+
+	// check if it's http or https. In either case, loop from the same place, ie expecting COLON to be the next char.
+	c = fgetc(stream);
+	if (c != 's') ungetc(c, stream);
+	else {
+		buf[i] = c;
+		++i;
+	}
+
+	// check '://' after http/https
+	for (int j = 0;j<3;++j) {
+		c = fgetc(stream);
+		if (URL_COLON_SLASH_SLASH[j] != c) {
+			ungetc(c, stream);
+			return i;
+		}
+		buf[i] = c;
+		++i;
+	}
+	
+	// parse rest of the url.
+	while ((c=fgetc(stream)) != SPACE && c != NEWLINE && c != TAB && 
+		c != DOT && c != COMMA && c != SCOLON && 
+		c != EOF && c != EOT) {
 		buf[i] = c;
 		++i;
 	}
 	ungetc(c, stream);
+	if (i > 5) token->t = URL;
 	return i;
 }
 
@@ -175,8 +199,7 @@ size_t tokenize(Token tokens[], FILE* stream) {
 				buf[i] = c;
 				++i;
 				if (i == 4 && is_url(buf)) {
-					i = tokenize_url(buf, stream);
-					new.t = URL;
+					i = tokenize_url(buf, stream, &new);
 				}
 				if ( i >= MAX_STR) break; // TODO: improve
 			} while ( (c=fgetc(stream))  >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' ||
