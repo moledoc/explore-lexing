@@ -190,7 +190,8 @@ size_t tokenize(Token tokens[], FILE* stream) {
 					int c0 = fgetc(stream);
 					if ( c0 >= 'a' && c0 <= 'z' || c0 >= 'A' && c0 <= 'Z' ||
 						c0 >= '0' && c0 <= '9' || 
-						c0 == DOT || c0 == UNDERSCORE || c0 == DASH ) {
+						c0 == DOT || c0 == UNDERSCORE || c0 == DASH ||
+						c0 == QUOTE) {
 						ungetc(c0, stream);
 					} else {
 						break;
@@ -204,7 +205,8 @@ size_t tokenize(Token tokens[], FILE* stream) {
 				if ( i >= MAX_STR) break; // TODO: improve
 			} while ( (c=fgetc(stream))  >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' ||
 				c >= '0' && c <= '9' || 
-				c == DOT || c == UNDERSCORE || c == DASH );
+				c == DOT || c == UNDERSCORE || c == DASH || 
+				c == QUOTE);
 			ungetc(c, stream);
 			cpy(new.v, buf, (size_t)i);
 		} else if ( c >= '0' && c <= '9' ) {

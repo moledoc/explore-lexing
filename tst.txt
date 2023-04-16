@@ -51,3 +51,5 @@ https://github.com/moledoc/tokenc.git contains the source code.
 this sentence mentions sending a http request to an endpoint.
 websites should use https, because its safer.
 Testing http: https: http:/ https:/ http:// https:// http:/; http:/.
+
+In English, it's common to have single quotes.
