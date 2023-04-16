@@ -111,13 +111,6 @@ void cpy(char* dest, char* src, size_t n) {
 	*dest = '\0'; 
 }
 
-void cpy_tokens(Token* dest, Token* src, size_t n) {
-	for( int i=0; i<n; i++) {
-		*dest= *src++;
-		++dest;
-	}
-}
-
 int is_url(char val[]) {
 	int i = 0;
 	while (val[i] != '\0' && i < 4) {
